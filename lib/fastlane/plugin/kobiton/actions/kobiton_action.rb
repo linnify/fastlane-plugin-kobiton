@@ -65,7 +65,7 @@ module Fastlane
           FastlaneCore::ConfigItem.new(
             key: :api_key,
             env_name: "FL_KOBITON_API_KEY",
-            description: "API key from Kobiton.",
+            description: "API key from Kobiton",
             verify_block: proc do |value|
               UI.user_error!("No API key for KobitonUpload given, pass using `api_key: 'token'`") unless (value and not value.empty?)
             end,
