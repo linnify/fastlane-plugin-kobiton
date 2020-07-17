@@ -114,9 +114,9 @@ module Fastlane
         require "json"
 
         headers = {
-          "Authorization": authorization,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Authorization" => authorization,
+          "Content-Type" => "application/json",
+          "Accept" => "application/json"
         }
 
         response = RestClient.post "https://api.kobiton.com/v1/apps/uploadUrl", {
@@ -131,8 +131,8 @@ module Fastlane
         require "rest-client"
 
         headers = {
-          "Content-Type": "application/octet-stream",
-          "x-amz-tagging": "unsaved=true"
+          "Content-Type" => "application/octet-stream",
+          "x-amz-tagging" => "unsaved=true"
         }
 
         response = RestClient.put url, File.read(filepath), headers
@@ -149,8 +149,8 @@ module Fastlane
         }
 
         response = RestClient.post "https://api.kobiton.com/v1/apps", {
-          "filename": filename,
-          "appPath": app_path
+          "filename" => filename,
+          "appPath" => app_path
         }, headers
       end
     end
