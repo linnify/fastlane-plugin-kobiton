@@ -9,26 +9,60 @@ This project is a [_fastlane_](https://github.com/fastlane/fastlane) plugin. To 
 Add the following line to your Pluginfile:
 
 ```ruby
-gem "fastlane-plugin-kobiton", git: "https://github.com/linnify/kobiton-fastlane.git"
+gem "fastlane-plugin-kobiton", git: "https://github.com/linnify/fastlane-plugin-kobiton.git"
 ```
 
-Then run the following command:
+Then run the following commands:
 
 ```bash
-fastlane install_plugins
+bundle install
+bundle exec fastlane install_plugins
 ```
+
+Then you will need to use `bundle exec` afterwards because this repo is cached by the bundler:
+
+```bash
+bundle exec fastlane action kobiton
+```
+
+for printing the documentation of this action
+
+```bash
+bundle exec fastlane dev
+```
+
+for running the `dev` lane which might contain the `kobiton` action.
 
 ## About kobiton
 
 Upload build to Kobiton
 
-**Note to author:** Add a more detailed description about this plugin here. If your plugin contains multiple actions, make sure to mention them here.
+This is a lightweight Fastlane plugin which uploads a given build to Kobiton platform. This action won't trigger any tests on Kobiton. For an automated triggering of tests on Kobiton, please integrate using Jenkins.
+
+This action does not have any output parameters yet, we are planning to define some in a future version.
 
 ## Example
 
-Check out the [example `Fastfile`](fastlane/Fastfile) to see how to use this plugin. Try it by cloning the repo, running `fastlane install_plugins` and `bundle exec fastlane test`.
+Basic usage:
 
-**Note to author:** Please set up a sample project to make it easy for users to explore what your plugin does. Provide everything that is necessary to try out the plugin in this project (including a sample Xcode/Android project if necessary)
+```ruby
+platform :ios do
+  desc "A simple example of an iOS dev lane"
+  lane :dev do
+    increment_build_number
+    gym(
+      workspace: "MyAwesomeApp.xcworkspace",
+      clean: true,
+    )
+    kobiton(
+      api_key: "01234567-89AB-CDEF-0123-456789AB",
+      username: "johndoe",
+      file: lane_context[SharedValues::IPA_OUTPUT_PATH],
+      app_id: 38007
+    )
+  end
+end
+```
 
 ## Run tests for this plugin
 
