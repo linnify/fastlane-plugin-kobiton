@@ -148,7 +148,7 @@ module Fastlane
           "Content-Type" => "application/json"
         }
 
-        response = RestClient.poste "https://api.kobiton.com/v1/apps", {
+        response = RestClient.post "https://api.kobiton.com/v1/apps", {
           "filename": filename,
           "appPath": app_path
         }, headers
