@@ -10,7 +10,10 @@ module Fastlane
         username = params[:username]
         api_key = params[:api_key]
 
-        base64_authorization = Base64.encode64("#{username}:#{api_key}")
+        # Must use strict encoding because encode64() will insert
+        # a new line every 60 characters and at the end of the
+        # encoded string...
+        base64_authorization = Base64.strict_encode64("#{username}:#{api_key}")
         authorization = "Basic #{base64_authorization}"
 
         filepath = params[:file]
@@ -27,7 +30,7 @@ module Fastlane
         app_path = kobiton_upload_pair["appPath"]
         upload_url = kobiton_upload_pair["url"]
 
-        UI.message("Uploadfing the build to Amazon S3 storage...")
+        UI.message("Uploading the build to Amazon S3 storage...")
 
         upload_success = self.upload_to_s3(upload_url, filepath)
 
@@ -118,10 +121,14 @@ module Fastlane
           "Accept" => "application/json"
         }
 
-        response = RestClient.post("https://api.kobiton.com/v1/apps/uploadUrl", {
-          "filename" => filename,
-          "appId" => app_id
-        }, headers)
+        begin
+          response = RestClient.post("https://api.kobiton.com/v1/apps/uploadUrl", {
+            "filename" => filename,
+            "appId" => app_id
+          }, headers)
+        rescue RestClient::Exception => e
+          UI.user_error!("S3 URL retrieval failed status code #{e.response.code}, message from server:  #{e.response.body}")
+        end
 
         return JSON.parse(response)
       end
@@ -134,7 +141,11 @@ module Fastlane
           "x-amz-tagging" => "unsaved=true"
         }
 
-        response = RestClient.put(url, File.read(filepath), headers)
+        begin
+          response = RestClient.put(url, File.read(filepath), headers)
+        rescue RestClient::Exception => e
+          UI.user_error!("Uploading the binary to S3 failed with status code #{e.response.code}, message: #{e.response.body}")
+        end
 
         return response.code == 200
       end
@@ -147,10 +158,14 @@ module Fastlane
           "Content-Type" => "application/json"
         }
 
-        RestClient.post("https://api.kobiton.com/v1/apps", {
-          "filename" => filename,
-          "appPath" => app_path
-        }, headers)
+        begin
+          RestClient.post("https://api.kobiton.com/v1/apps", {
+            "filename" => filename,
+            "appPath" => app_path
+          }, headers)
+        rescue RestClient::Exception => e
+          UI.user_error!("Kobiton could not be notified, status code: #{e.response.code}, message: #{e.response.body}")
+        end
       end
     end
   end
