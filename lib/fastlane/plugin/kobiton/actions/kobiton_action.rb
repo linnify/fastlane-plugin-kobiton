@@ -47,10 +47,12 @@ module Fastlane
         name = params[:name]
 
         if !name.nil? && !name.empty?
-          UI.message("Updating version name to #{name}")
-          version_id = kobiton_notify['versionId']
+          UI.message("Waiting for build to process")
+          sleep(5) # Need to wait for Kobiton to process the build.
 
-          self.rename(version_id, name, authorization)
+          UI.message("Updating version name to #{name}")
+
+          self.rename(kobiton_notify['versionId'], name, authorization)
         end
       end
 
@@ -198,10 +200,8 @@ module Fastlane
           RestClient.post("https://api.kobiton.com/v1/app/versions/#{version_id}/rename", JSON.generate({
             "newName" => name
           }), headers)
-
-
         rescue RestClient::Exception => e
-          UI.user_error!("App name could not be assigned, status code: #{e.response.code}, message: #{e.response.body}")
+          UI.user_error!("App could not be renamed, status code: #{e.response.code}, message: #{e.response.body}")
         end
       end
     end
