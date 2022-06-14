@@ -41,9 +41,9 @@ This is a lightweight Fastlane plugin which uploads a given build to Kobiton pla
 
 This action does not have any output parameters yet, we are planning to define some in a future version.
 
-## Example
+## Usage
 
-Basic usage:
+### Basic usage:
 
 ```ruby
 platform :ios do
@@ -63,6 +63,19 @@ platform :ios do
   end
 end
 ```
+
+### Specify version name
+If you need the application version to have a different name in Kobiton than the application's name, you can specify it.
+```ruby
+kobiton(
+  name: "Release Candidate",
+  api_key: "01234567-89AB-CDEF-0123-456789AB",
+  username: "johndoe",
+  file: lane_context[SharedValues::IPA_OUTPUT_PATH],
+  app_id: 38007
+)
+```
+
 
 ## Run tests for this plugin
 
