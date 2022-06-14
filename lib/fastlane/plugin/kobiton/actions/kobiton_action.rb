@@ -195,9 +195,9 @@ module Fastlane
         }
 
         begin
-          RestClient.post("https://api.kobiton.com/v1/app/versions/#{version_id}/rename", {
+          RestClient.post("https://api.kobiton.com/v1/app/versions/#{version_id}/rename", JSON.generate({
             "newName" => name
-          }, headers)
+          }), headers)
 
 
         rescue RestClient::Exception => e
