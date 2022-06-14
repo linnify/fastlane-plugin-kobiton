@@ -40,9 +40,18 @@ module Fastlane
           UI.user_error!("Failed to upload the build to Amazon S3 storage.")
         end
 
-        self.notify_kobiton_after_file_upload(app_path, filename, authorization)
+        kobiton_notify = self.notify_kobiton_after_file_upload(app_path, filename, authorization)
 
         UI.message("Successfully uploaded the build to Kobiton!")
+
+        name = params[:name]
+
+        if !name.nil? && !name.empty?
+          UI.message("Updating version name to #{name}")
+          version_id = kobiton_notify['versionId']
+
+          self.rename(version_id, name, authorization)
+        end
       end
 
       def self.description
@@ -103,6 +112,13 @@ module Fastlane
             end,
             optional: false,
             type: Integer
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :name,
+            env_name: "FL_KOBITON_NAME",
+            description: "The name of the application to display in Kobiton",
+            optional: true,
+            type: String
           )
         ]
       end
@@ -159,12 +175,33 @@ module Fastlane
         }
 
         begin
-          RestClient.post("https://api.kobiton.com/v1/apps", {
+          response = RestClient.post("https://api.kobiton.com/v1/apps", {
             "filename" => filename,
             "appPath" => app_path
           }, headers)
+
+          return JSON.parse(response)
         rescue RestClient::Exception => e
           UI.user_error!("Kobiton could not be notified, status code: #{e.response.code}, message: #{e.response.body}")
+        end
+      end
+
+      def self.rename(version_id, name, authorization)
+        require "rest-client"
+
+        headers = {
+          "Authorization" => authorization,
+          "Content-Type" => "application/json"
+        }
+
+        begin
+          RestClient.post("https://api.kobiton.com/v1/app/versions/#{version_id}/rename", {
+            "newName" => name
+          }, headers)
+
+
+        rescue RestClient::Exception => e
+          UI.user_error!("App name could not be assigned, status code: #{e.response.code}, message: #{e.response.body}")
         end
       end
     end
