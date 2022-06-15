@@ -58,7 +58,7 @@ module Fastlane
               UI.user_error!("App is taking a long time to process, could not rename.")
             end
 
-            break if (!status.nil? && status == 'OK')
+            break if !status.nil? && status == 'OK'
 
             sleep(2)
           end
@@ -232,7 +232,7 @@ module Fastlane
           return JSON.parse(app_version)['state']
         rescue RestClient::Exception => e
           if e.response.code == 404
-            return nil;
+            return nil
           end
 
           UI.user_error!("App status could not be received: #{e.response.code}, message: #{e.response.body}")
