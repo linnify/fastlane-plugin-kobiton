@@ -47,8 +47,21 @@ module Fastlane
         name = params[:name]
 
         if !name.nil? && !name.empty?
-          UI.message("Waiting for build to process")
-          sleep(5) # Need to wait for Kobiton to process the build.
+          processing_attempts = 0
+          loop do
+            UI.message("Waiting for build to finish processing...")
+            status = self.get_app_state(kobiton_notify['versionId'], authorization)
+
+            processing_attempts += 1
+
+            if processing_attempts >= 10
+              UI.user_error!("App is taking a long time to process, could not rename.")
+            end
+
+            break if (!status.nil? && status == 'OK')
+
+            sleep(2)
+          end
 
           UI.message("Updating version name to #{name}")
 
@@ -202,6 +215,27 @@ module Fastlane
           }), headers)
         rescue RestClient::Exception => e
           UI.user_error!("App could not be renamed, status code: #{e.response.code}, message: #{e.response.body}")
+        end
+      end
+
+      def self.get_app_state(version_id, authorization)
+        require "rest-client"
+
+        headers = {
+          "Authorization" => authorization,
+          "Content-Type" => "application/json"
+        }
+
+        begin
+          app_version =  RestClient.get("https://api.kobiton.com/v1/app/versions/#{version_id}", headers)
+
+          return JSON.parse(app_version)['state']
+        rescue RestClient::Exception => e
+          if e.response.code == 404
+            return nil;
+          end
+
+          UI.user_error!("App status could not be received: #{e.response.code}, message: #{e.response.body}")
         end
       end
     end
