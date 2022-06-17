@@ -40,9 +40,33 @@ module Fastlane
           UI.user_error!("Failed to upload the build to Amazon S3 storage.")
         end
 
-        self.notify_kobiton_after_file_upload(app_path, filename, authorization)
+        kobiton_notify = self.notify_kobiton_after_file_upload(app_path, filename, authorization)
 
         UI.message("Successfully uploaded the build to Kobiton!")
+
+        name = params[:name]
+
+        if !name.nil? && !name.empty?
+          processing_attempts = 0
+          loop do
+            UI.message("Waiting for build to finish processing...")
+            status = self.get_app_state(kobiton_notify['versionId'], authorization)
+
+            processing_attempts += 1
+
+            if processing_attempts >= 10
+              UI.user_error!("App is taking a long time to process, could not rename.")
+            end
+
+            break if !status.nil? && status == 'OK'
+
+            sleep(2)
+          end
+
+          UI.message("Updating version name to #{name}")
+
+          self.rename(kobiton_notify['versionId'], name, authorization)
+        end
       end
 
       def self.description
@@ -103,6 +127,13 @@ module Fastlane
             end,
             optional: false,
             type: Integer
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :name,
+            env_name: "FL_KOBITON_NAME",
+            description: "The name of the application to display in Kobiton",
+            optional: true,
+            type: String
           )
         ]
       end
@@ -159,12 +190,52 @@ module Fastlane
         }
 
         begin
-          RestClient.post("https://api.kobiton.com/v1/apps", {
+          response = RestClient.post("https://api.kobiton.com/v1/apps", {
             "filename" => filename,
             "appPath" => app_path
           }, headers)
+
+          return JSON.parse(response)
         rescue RestClient::Exception => e
           UI.user_error!("Kobiton could not be notified, status code: #{e.response.code}, message: #{e.response.body}")
+        end
+      end
+
+      def self.rename(version_id, name, authorization)
+        require "rest-client"
+
+        headers = {
+          "Authorization" => authorization,
+          "Content-Type" => "application/json"
+        }
+
+        begin
+          RestClient.post("https://api.kobiton.com/v1/app/versions/#{version_id}/rename", JSON.generate({
+            "newName" => name
+          }), headers)
+        rescue RestClient::Exception => e
+          UI.user_error!("App could not be renamed, status code: #{e.response.code}, message: #{e.response.body}")
+        end
+      end
+
+      def self.get_app_state(version_id, authorization)
+        require "rest-client"
+
+        headers = {
+          "Authorization" => authorization,
+          "Content-Type" => "application/json"
+        }
+
+        begin
+          app_version =  RestClient.get("https://api.kobiton.com/v1/app/versions/#{version_id}", headers)
+
+          return JSON.parse(app_version)['state']
+        rescue RestClient::Exception => e
+          if e.response.code == 404
+            return nil
+          end
+
+          UI.user_error!("App status could not be received: #{e.response.code}, message: #{e.response.body}")
         end
       end
     end
